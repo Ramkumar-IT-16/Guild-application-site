@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Guild System</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+      color: white;
+      text-align: center;
+    }
+
+    h1 { color: #ffb347; }
+
+    button {
+      padding: 12px;
+      margin: 10px;
+      background: #ffb347;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    button:hover { background: #ffd27f; }
+
+    input, select {
+      padding: 10px;
+      margin: 8px;
+      background: #111;
+      border: 1px solid #ffb347;
+      color: white;
+      border-radius: 5px;
+    }
+
+    .hidden { display: none; }
+
+    .box {
+      border: 1px solid #ffb347;
+      margin: 10px;
+      padding: 10px;
+      background: #1f1f1f;
+      border-radius: 8px;
+    }
+
+    .success { color: lightgreen; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="home">
+  <h1>🔥 Guild Portal</h1>
+  <button onclick="showPage('member')">➕ New Member</button>
+  <button onclick="showPage('adminLogin')">🔐 Admin Login</button>
+  <button onclick="showPage('statusPage')">📄 Application Status</button>
+</div>
+
+<!-- MEMBER -->
+<div id="member" class="hidden">
+  <h1>Join Guild</h1>
+
+  <input id="name" placeholder="Enter Name"><br>
+  <input id="id" placeholder="Enter ID"><br>
+
+  <button onclick="sendRequest()">Submit</button>
+  <p id="successMsg"></p>
+
+  <button onclick="goHome()">⬅ Back</button>
+</div>
+
+<!-- ADMIN LOGIN -->
+<div id="adminLogin" class="hidden">
+  <h1>Admin Login</h1>
+
+  <select id="adminId">
+    <option value="">Select Admin</option>
+    <option value="activeleader">Active Leader</option>
+    <option value="elder1">Elder 1</option>
+    <option value="elder2">Elder 2</option>
+    <option value="elder3">Elder 3</option>
+    <option value="elder4">Elder 4</option>
+    <option value="elder5">Elder 5</option>
+  </select><br>
+
+  <input id="adminPass" type="password" placeholder="Password"><br>
+
+  <button onclick="login()">Login</button><br>
+  <button onclick="goHome()">⬅ Back</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel" class="hidden">
+  <h1>👑 Admin Panel</h1>
+  <h3 id="adminName"></h3>
+
+  <h2>📥 Requests</h2>
+  <div id="requests"></div>
+
+  <h2>👑 Members</h2>
+  <div id="members"></div>
+
+  <button onclick="logout()">Logout</button>
+</div>
+
+<!-- STATUS PAGE -->
+<div id="statusPage" class="hidden">
+  <h1>Check Application Status</h1>
+
+  <input id="checkId" placeholder="Enter Your ID"><br>
+  <button onclick="checkStatus()">Check</button>
+
+  <p id="statusResult"></p>
+
+  <button onclick="goHome()">⬅ Back</button>
+</div>
+
+<script>
+
+let requests = JSON.parse(localStorage.getItem("requests")) || [];
+let members = JSON.parse(localStorage.getItem("members")) || [];
+let currentAdmin = "";
+
+// PAGE SWITCH
+function showPage(page) {
+  ["home","member","adminLogin","adminPanel","statusPage"].forEach(id=>{
+    document.getElementById(id).classList.add("hidden");
+  });
+  document.getElementById(page).classList.remove("hidden");
+}
+
+function goHome(){ showPage("home"); }
+
+// SEND REQUEST
+function sendRequest() {
+  const name = document.getElementById("name").value;
+  const id = document.getElementById("id").value;
+  const msg = document.getElementById("successMsg");
+
+  if (!name || !id) {
+    msg.innerText = "Enter details";
+    msg.className = "error";
+    return;
+  }
+
+  if (requests.find(r=>r.id===id) || members.find(m=>m.id===id)) {
+    msg.innerText = "⚠️ ID already applied!";
+    msg.className = "error";
+    return;
+  }
+
+  requests.push({ name,id,time:new Date().toLocaleString() });
+  save();
+
+  msg.innerText = "✨ Thanks for appreciation joining in our guild. Your profile sended for admin profile.";
+  msg.className = "success";
+
+  document.getElementById("name").value="";
+  document.getElementById("id").value="";
+}
+
+// LOGIN
+function login() {
+  const id=document.getElementById("adminId").value;
+  const pass=document.getElementById("adminPass").value;
+
+  if (
+    (id==="activeleader" && pass==="1006") ||
+    (id==="elder1" && pass==="1256") ||
+    (id==="elder2" && pass==="3487") ||
+    (id==="elder3" && pass==="6567") ||
+    (id==="elder4" && pass==="7688") ||
+    (id==="elder5" && pass==="3767")
+  ){
+    currentAdmin = id;
+    document.getElementById("adminName").innerText = "Logged in as: " + id;
+    showPage("adminPanel");
+    render();
+  } else {
+    alert("Wrong login ❌");
+  }
+}
+
+function logout(){ goHome(); }
+
+// APPROVE
+function approve(i){
+  members.push(requests[i]);
+  requests.splice(i,1);
+  save();
+  render();
+}
+
+// REJECT
+function reject(i){
+  requests.splice(i,1);
+  save();
+  render();
+}
+
+// SAVE
+function save(){
+  localStorage.setItem("requests", JSON.stringify(requests));
+  localStorage.setItem("members", JSON.stringify(members));
+}
+
+// RENDER
+function render(){
+  const reqBox=document.getElementById("requests");
+  reqBox.innerHTML="";
+
+  requests.forEach((r,i)=>{
+    reqBox.innerHTML+=`
+      <div class="box">
+        <h3>${r.name}</h3>
+        <p>ID: ${r.id}</p>
+        <p>${r.time}</p>
+        <button onclick="approve(${i})">Approve</button>
+        <button onclick="reject(${i})">Reject</button>
+      </div>
+    `;
+  });
+
+  const memBox=document.getElementById("members");
+  memBox.innerHTML="";
+
+  members.forEach(m=>{
+    memBox.innerHTML+=`
+      <div class="box">
+        <h3>${m.name}</h3>
+        <p>ID: ${m.id}</p>
+        <p>Joined: ${m.time}</p>
+      </div>
+    `;
+  });
+}
+
+// STATUS CHECK
+function checkStatus(){
+  const id=document.getElementById("checkId").value;
+  const result=document.getElementById("statusResult");
+
+  if (members.find(m=>m.id===id)){
+    result.innerText="✅ Approved";
+    result.style.color="lightgreen";
+  }
+  else if (requests.find(r=>r.id===id)){
+    result.innerText="⏳ Pending";
+    result.style.color="orange";
+  }
+  else{
+    result.innerText="❌ Wrong ID / Not Found";
+    result.style.color="red";
+  }
+}
+
+</script>
+
+</body>
+</html>
